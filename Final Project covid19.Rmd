@@ -1,0 +1,223 @@
+---
+title: "Data Anaylsis on COVID-19" 
+subtitle: "STAT 184 Final Project"
+author: "Angela Yihan Bao"
+output: html_notebook
+---
+###### Front Matter
+```{r,warning = FALSE, message = FALSE}
+# clean up workspace environment
+rm(list = ls())
+
+# all packages used for the assignment
+library(mosaic)
+library(tidyverse)
+library(DataComputing)
+library(lubridate)
+library(covid19us)
+library(rvest)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(scales)
+```
+
+* **What is the trend of the spread of COVID-19 around the world?**
+
+* The data frame from Our World in Data is made with data collected by CDC(U.S.Centers for Diseases Control and Prevention) and WHO(World Health Organization), NHC(National Health Commission (NHC) of the People’s Republic of China) and institutions from many other countries.It's a data frame that shows specific information such as new Covid-19 cases, total Covid-19 cases, age of people who are diagnosed with Covid, gdp in the area, number of hand-washing facilities and etc. The supplement dataframe is from r package covid19us and it's installed in line 17.
+The following sub questions will be answered to help me explore the data and find final answer.
+- What's the general trend of the spread worldwide?
+- What are the most affected countries?
+- Is death rate related to the number of hospital beds per thousand?
+- Does the number of hand-washing facilities influence the spread of Covid?
+- Is GDP in a country relate to the death rate?
+
+
+
+##### Data Resource
+```{r}
+### Data from Our World in Data
+coronavirus <- read.csv("owid-covid-data.csv")
+```
+```{r}
+### Inspect the data
+str(coronavirus)
+```
+```{r}
+coronavirus <- coronavirus %>%
+  mutate(date = ymd(date)) 
+
+coronavirus1 <- coronavirus[-c(56325:dim(coronavirus)[1]),]
+```
+* **General Trend of the spread of Covid worldwide: **
+* 'worldcovid' is a data frame that shows the total number of Covid cases around the world. And the graph indcates the trend of how the total number of covid cases around the world increase by time.
+* We can see from the graph that the total Covid cases started to rapidly increase since April, 2020. And the total number of Covid cases exceeded 50,000,000 by the mid November,2020.
+```{r}
+worldcovid <-
+  aggregate(total_cases ~date, data=coronavirus1, sum, na.rm=TRUE)
+worldcovid %>%
+  ggplot()+
+  geom_line(aes(date,total_cases,color = "World Total")) +
+  scale_y_continuous(labels = comma)+
+  ggtitle("Worldwide Covid Total Cases")
+worldcovid
+```
+* **The Spread of Covid19 in different Continent:**
+* The following steps shows Covid Situations in different continents by date.
+* The graph after the data for each continent is prepared shows the trend of the spread of covid in Asia, Africa, Europe, Oceania, North and South America.
+* We can see from the graph that Asia has the highest number of total Covid cases by November (over 15000000), North America and Europe has the highest case increasing rate.
+```{r}
+Asia <- 
+  coronavirus1 %>%
+  filter(continent == "Asia")
+Asia<-
+  aggregate(total_cases ~date, data=Asia, sum, na.rm=TRUE)
+```
+```{r}
+Europe <- 
+  coronavirus1 %>%
+  filter(continent == "Europe")
+Europe<-
+  aggregate(total_cases ~date, data=Europe, sum, na.rm=TRUE)
+```
+```{r}
+Africa <- 
+  coronavirus1 %>%
+  filter(continent == "Africa")
+Africa<-
+  aggregate(total_cases ~date, data=Africa, sum, na.rm=TRUE)
+```
+```{r}
+North_America <- 
+  coronavirus1 %>%
+  filter(continent == "North America") 
+North_America<-
+  aggregate(total_cases ~date, data=North_America, sum, na.rm=TRUE)
+```
+```{r}
+Oceania <- 
+  coronavirus1 %>%
+  filter(continent == "Oceania") 
+Oceania<-
+  aggregate(total_cases ~date, data=Oceania, sum, na.rm=TRUE)
+```
+```{r}
+South_America <- 
+  coronavirus1 %>%
+  filter(continent == "South America") 
+South_America<-
+  aggregate(total_cases ~date, data=South_America, sum, na.rm=TRUE)
+```
+```{r}
+worldwide<-
+ggplot()+
+  geom_line(data = Asia, aes(x = date, y = total_cases, color = "Asia")) +
+  geom_line(data = Europe, aes(x = date, y = total_cases, color = "Europe")) +
+  geom_line(data = Africa, aes(x = date, y = total_cases, color = "Africa")) +
+  geom_line(data = North_America, aes(x = date, y = total_cases, color = "North America")) +
+  geom_line(data = Oceania, aes(x = date, y = total_cases, color = "Oceania")) +
+  geom_line(data = South_America, aes(x = date, y = total_cases, color = "South America")) +
+  scale_y_continuous(labels = comma)+
+  xlab('date') + ylab('Total Cases') + ggtitle("COVID19 Cases in Different Continents")
+worldwide  
+              
+```
+
+* **From the graph above we can see that the most affected continents are Asia, North America and Europe. The following steps will help us see what are the most affected countries in these continents.**
+* I used filter to get the data of total Covid cases in each continent and ploted the graphs that represent the increase of Covid cases in different countries in the continent.
+* From the graphs below, we can see that India is the most affect country in Asia, their total Covid cases started to drametically increase since June, 2020. Russia is the country has the most Covid cases in Europe started from May, 2020. The United States is the most affected country in North America, and it is the only country has over 10,000,000 cases by November, 2020.
+```{r}
+Asia_countries<-
+  coronavirus1 %>%
+  filter(continent == "Asia") %>%
+  group_by(date, location, total_cases) %>%
+  ggplot()+
+  geom_line(aes(x = date, y = total_cases, color = location)) +                                               scale_y_continuous(labels = comma)
+               
+Asia_countries
+```
+```{r}
+Euro_countries<-
+  coronavirus1 %>%
+  filter(continent == "Europe") %>%
+  group_by(date, location, total_cases) %>%
+  ggplot()+
+  geom_line(aes(x = date, y = total_cases, color = location)) + 
+  scale_y_continuous(labels = comma)
+Euro_countries
+```
+```{r}
+NAmerica_countries<-
+  coronavirus1 %>%
+  filter(continent == "North America") %>%
+  group_by(date, location, total_cases) %>%
+  ggplot()+
+  geom_line(aes(x = date, y = total_cases, color = location)) + 
+  scale_y_continuous(labels = comma)
+NAmerica_countries
+```
+
+* **Is death rate related to the number of hospital beds per thousand?**
+* To answer this question I picked three countries in Asia: China, India, Japan and Singapore.
+* The result can be observed from the graph that the more hospital beds per thousand people relate to a smaller total number of death. So the countries with better medical supplies has a lower death rate during the pandemic. Normally, countries with better medical supplies also have better treatment ability and more advanced medical technologies, and this is definetely related to the death rate.
+```{r}
+Asia_countries<-
+coronavirus1 %>%
+  filter(location =="China"|location=="India"|location=="Japan"|location=="Singapore") %>%
+  group_by(location,date,total_deaths,hospital_beds_per_thousand) 
+
+Asia_hosp<-  
+ggplot(Asia_countries, aes(x=date, y=total_deaths)) + 
+  geom_point(aes(col=location, size=hospital_beds_per_thousand)) +   # draw points
+  scale_y_continuous(labels = comma) +   
+  labs(subtitle="Death Rate & Hospital Beds per Thousand", 
+       y="Death", 
+       x="Date")
+
+Asia_hosp
+```
+* **Does the number of hand-washing facilities influence the spread of Covid?**
+* According to CDC, efficient hand washing can significantly prevent the spread of Corona Virus. Here, I'm going to use data visualization to prove whether this is true. Number of hand washing facilities in different locations can be found in the Our World in Data data frame. And this data are used to compare with the new cases data.
+* For this part, I picked Kazakhstan out of all the Asian  countries, Kenya out of all the African countries, Cuba out of all the North American countries, Colombia out of all the South American countries. All these four locations have different number of hand washing facilities.
+* The result turned out that even technique washing hands can prevent the spread of Corona Virus, there is no clear association between the number of hand washing facilities and the Covid cases increasing rate. 
+```{r}
+Handwash<-
+coronavirus1 %>%
+    filter(location =="Kazakhstan"|location=="Kenya"|location=="Cuba"|location=="	
+Colombia") %>%
+  select(location,date,new_cases,population,handwashing_facilities) %>%
+  mutate(increase_rate = new_cases / population)
+
+Handwash_c<-  
+ggplot(Handwash, aes(x=date, y=increase_rate)) + 
+  geom_point(aes(shape=location, col=handwashing_facilities),size = 1.5) +   # draw points
+  scale_y_continuous(labels = comma) +   
+  labs(subtitle="New Cases Increasing Rate & Number of Handwashing Facilities", 
+       y="Increasing Rate", 
+       x="Date")
+Handwash_c
+```
+
+
+* **Is gdp in a country relate to the death rate?**
+* A lot of people believe countries with higHer GDP per capita would have lower rate of Covid cases. In this part, I chose Qatar out of all the other Asian countries, United States out of all the North American countries, Burundi out of all the African countries and Bolivia out of all the South American countries. Some of them have relative high GDP per capita and some of them have relative low GDP per capita. Their GDP will be compared with the new cases per million data. 
+* The result turns out the fact that countries with higher GDP don't relate to a lower rate of Covid new cases. Even, Qatar, the countries has the highest GDP around the world had a really high case increase from April to the mid May.
+```{r}
+gdp<-
+coronavirus1 %>%
+    filter(location =="Qatar"|location=="United States"|location=="	
+Burundi"|location=="Bolivia") %>%
+  group_by(location,date,new_cases_per_million,gdp_per_capita) 
+
+gdp<-  
+ggplot(gdp, aes(x=date, y=new_cases_per_million)) + 
+  geom_point(aes(shape=location, col=gdp_per_capita),size = 1.5) +   # draw points
+  scale_y_continuous(labels = comma) +   
+  labs(subtitle="New Cases per Million & GDP", 
+       y="New Cases per Million", 
+       x="Date")
+gdp
+```
+
+##### To summarize, Covid-19 cases started to rapidly increase since April, 2020 and quickly evolved into a global pandemic. Asia, Europe and North America are the three continents that has the most number of Covid cases and India, Russia and the United States are the countries most affected by Covid-19 in those continents. It also turned out that countries with higher number of hospital bed per thousand are related to lower Covid death rate. The number of hospital bed per thousand indicates the overall medical condition and technology in a country. Countries have more advanced technologies and abundant medical resources such as Japan and Singapre have less total death from Covid. However, even it's scientifically proved that washing hands can effectively stop the spread of Corona Virus, locations with more handwashing facilities don't necessarily have a lower number of new Covid cases by time. And all the countries around the world are getting hit by covid equally regardless of the GDP per Capita of the country. 
+
